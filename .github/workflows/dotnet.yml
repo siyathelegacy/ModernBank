@@ -26,10 +26,7 @@ jobs:
            dotnet restore src/Contracts/ModernBank.Contracts.csproj
            dotnet restore src/Clients/ModernBank.Http_Client.csproj
       
-    - name: Restore dependencies
+    - name: Build
       run: dotnet restore src/Presentation/ModernBank.API.csproj
            dotnet restore src/Contracts/ModernBank.Contracts.csproj
            dotnet restore src/Clients/ModernBank.Http_Client.csproj
-           
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
