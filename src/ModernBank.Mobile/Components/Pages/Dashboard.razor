@@ -1,0 +1,190 @@
+@page "/dashboard"
+@inject DemoBankingState Banking
+@inject NavigationManager Navigation
+
+<PageTitle>Home · Modern Bank</PageTitle>
+
+<div class="mx-auto max-w-6xl px-4 py-6 sm:px-7 lg:px-10 lg:py-9">
+    <header class="mb-6 flex items-start justify-between gap-4 sm:mb-8">
+        <div>
+            <p class="text-sm text-secondary">@DateTime.Now.ToString("dddd, d MMMM")</p>
+            <h1 class="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl">@Greeting, @FirstName.</h1>
+            <p class="mt-2 text-secondary">Here’s where your money stands today.</p>
+        </div>
+        <button class="grid size-11 shrink-0 place-items-center rounded-full border border-stroke bg-white text-secondary hover:bg-canvas" type="button" aria-label="Open profile and settings" @onclick='() => Navigation.NavigateTo("/profile")'>
+            <AppIcon Name="user" Class="size-5" />
+        </button>
+    </header>
+
+    @if (Banking.IsSarsAdmin)
+    {
+        <section class="rounded-2xl border border-brand/20 bg-white p-5 sm:p-6" aria-labelledby="admin-welcome">
+            <h2 id="admin-welcome" class="font-display text-xl font-semibold">SARS administrator preview</h2>
+            <p class="mt-2 max-w-2xl leading-6 text-secondary">Taxpayer banking actions are not available in this role. The preview contains sample refund requests only.</p>
+            <a class="primary-button mt-5 inline-flex" href="/sars-admin">Review sample requests</a>
+        </section>
+    }
+    else
+    {
+        <section class="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]" aria-label="Balances">
+            <BalanceCard Label="Available balance" Amount="@Banking.AvailableBalance" Description="Ready for everyday spending and transfers." Variant="available" ShowVisibilityToggle="true">
+                <Footer>
+                    <div class="flex flex-wrap gap-2">
+                        <a class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-brand hover:bg-blue-50" href="/transfer?type=deposit"><AppIcon Name="plus" Class="size-4" />Add money</a>
+                        <a class="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/25 px-4 text-sm font-semibold text-white hover:bg-white/10" href="/accounts">View accounts</a>
+                    </div>
+                </Footer>
+            </BalanceCard>
+            <BalanceCard Label="SARS balance · frozen" Amount="@Banking.SarsBalance" Description="Set aside from income. It stays separate until you confirm a SARS payment." Variant="tax" BadgeText="Locked" BadgeIcon="lock" HeadingId="dashboard-tax-balance">
+                <Footer>
+                    <a class="inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-900/20 bg-white/70 px-4 text-sm font-semibold text-amber-950 hover:bg-white" href="/tax">Open tax centre <AppIcon Name="chevron-right" Class="size-4" /></a>
+                </Footer>
+            </BalanceCard>
+        </section>
+
+        <section class="mt-4 grid gap-4 sm:grid-cols-3" aria-label="Money overview">
+            <article class="rounded-2xl border border-stroke bg-white p-4 sm:p-5">
+                <p class="text-sm text-secondary">Investment</p>
+                <p class="mt-2 font-display text-xl font-semibold tracking-tight">@VisibleMoney(Banking.InvestmentBalance)</p>
+                <p class="mt-1 text-sm text-secondary">Kept apart from everyday spending</p>
+            </article>
+            <article class="rounded-2xl border border-stroke bg-white p-4 sm:p-5">
+                <p class="text-sm text-secondary">Income allocated</p>
+                <p class="mt-2 font-display text-xl font-semibold tracking-tight">@VisibleMoney(Banking.IncomeAllocations.Sum(item => item.GrossAmount))</p>
+                <p class="mt-1 text-sm text-secondary">Across logged income in this demo</p>
+            </article>
+            <article class="rounded-2xl border border-stroke bg-white p-4 sm:p-5">
+                <p class="text-sm text-secondary">Tax estimate</p>
+                <p class="mt-2 font-display text-xl font-semibold tracking-tight">@VisibleMoney(Banking.EstimatedTaxLiability)</p>
+                <p class="mt-1 text-sm text-secondary">Illustrative, not tax advice</p>
+            </article>
+        </section>
+
+        <section class="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
+            <div class="rounded-2xl border border-stroke bg-white p-5 sm:p-6">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="font-display text-lg font-semibold">Log incoming income</h2>
+                        <p class="mt-1 max-w-lg text-sm leading-5 text-secondary">See how a deposit would be divided before it is added to this local demo.</p>
+                    </div>
+                    <span class="hidden size-10 shrink-0 place-items-center rounded-xl bg-mint text-positive sm:grid"><AppIcon Name="income" Class="size-5" /></span>
+                </div>
+                <EditForm Model="@IncomeForm" OnValidSubmit="AllocateIncome" class="mt-5 grid gap-4 sm:grid-cols-2">
+                    <DataAnnotationsValidator />
+                    <div class="form-field">
+                        <label for="income-amount" class="field-label">Gross income amount</label>
+                        <InputNumber id="income-amount" @bind-Value="IncomeForm.Amount" class="field-control" min="1" step="0.01" inputmode="decimal" />
+                        <ValidationMessage For="() => IncomeForm.Amount" class="field-error" />
+                    </div>
+                    <div class="form-field">
+                        <label for="income-source" class="field-label">Income source</label>
+                        <InputText id="income-source" @bind-Value="IncomeForm.Source" class="field-control" maxlength="120" placeholder="Salary, client payment…" />
+                    </div>
+                    <div class="form-field sm:col-span-2">
+                        <label for="income-account" class="field-label">Add personal portion to</label>
+                        <InputSelect id="income-account" @bind-Value="IncomeForm.AccountId" class="field-control">
+                            @foreach (var account in SpendableAccounts)
+                            {
+                                <option value="@account.Id">@account.Name</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => IncomeForm.AccountId" class="field-error" />
+                    </div>
+                    <div class="sm:col-span-2 rounded-xl bg-canvas p-4" aria-live="polite">
+                        <div class="flex items-center justify-between gap-3 text-sm">
+                            <span class="inline-flex items-center gap-2"><span class="size-2.5 rounded-full bg-brand" aria-hidden="true"></span>Personal · @Banking.Allocation.PersonalPercent%</span>
+                            <strong>@DemoBankingState.Money(PreviewPersonal)</strong>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between gap-3 text-sm">
+                            <span class="inline-flex items-center gap-2"><span class="size-2.5 rounded-full bg-investment" aria-hidden="true"></span>Investment · @Banking.Allocation.InvestmentPercent%</span>
+                            <strong>@DemoBankingState.Money(PreviewInvestment)</strong>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between gap-3 text-sm">
+                            <span class="inline-flex items-center gap-2"><span class="size-2.5 rounded-full bg-tax" aria-hidden="true"></span>Frozen SARS · @Banking.Allocation.TaxPercent%</span>
+                            <strong>@DemoBankingState.Money(PreviewTax)</strong>
+                        </div>
+                    </div>
+                    <button class="primary-button sm:col-span-2" type="submit">Record income split</button>
+                </EditForm>
+            </div>
+
+            <div class="rounded-2xl border border-stroke bg-white p-5 sm:p-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="font-display text-lg font-semibold">Your income split</h2>
+                        <p class="mt-1 text-sm text-secondary">Adjust where future demo income goes.</p>
+                    </div>
+                    <span class="rounded-full bg-canvas px-3 py-1 text-sm font-semibold">@Banking.Allocation.PersonalPercent% personal</span>
+                </div>
+                <EditForm Model="@AllocationForm" OnValidSubmit="UpdateAllocation" class="mt-5 space-y-5">
+                    <DataAnnotationsValidator />
+                    <div class="form-field">
+                        <label for="investment-percent" class="field-label">Investment portion <span class="font-normal text-secondary">@AllocationForm.InvestmentPercent%</span></label>
+                        <InputNumber id="investment-percent" @bind-Value="AllocationForm.InvestmentPercent" class="field-control" min="0" max="100" />
+                        <ValidationMessage For="() => AllocationForm.InvestmentPercent" class="field-error" />
+                    </div>
+                    <div class="form-field">
+                        <label for="tax-percent" class="field-label">SARS reserve portion <span class="font-normal text-secondary">@AllocationForm.TaxReservePercent%</span></label>
+                        <InputNumber id="tax-percent" @bind-Value="AllocationForm.TaxReservePercent" class="field-control" min="0" max="100" />
+                        <ValidationMessage For="() => AllocationForm.TaxReservePercent" class="field-error" />
+                    </div>
+                    <p class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm leading-5 text-amber-950">The remaining @PreviewPersonalPercent% goes to personal income. This is a demo setting, not a tax calculation.</p>
+                    <button class="secondary-button w-full" type="submit">Save income split</button>
+                </EditForm>
+            </div>
+        </section>
+
+        <section class="mt-5 rounded-2xl border border-stroke bg-white p-5 sm:p-6" aria-labelledby="recent-activity-heading">
+            <div class="mb-4 flex items-center justify-between gap-4">
+                <div>
+                    <h2 id="recent-activity-heading" class="font-display text-lg font-semibold">Recent activity</h2>
+                    <p class="mt-1 text-sm text-secondary">Your latest entries across accounts and the SARS reserve.</p>
+                </div>
+                <a class="min-h-11 inline-flex items-center gap-1 rounded-xl px-3 text-sm font-semibold text-brand hover:bg-wash" href="/accounts">All accounts <AppIcon Name="chevron-right" Class="size-4" /></a>
+            </div>
+            <TransactionList Transactions="@Banking.Activity.Take(5)" />
+        </section>
+    }
+    <p class="mt-6 text-center text-xs leading-5 text-secondary">Demo only · Balances and activity are sample data stored in app memory. No real money is held, transferred or paid.</p>
+</div>
+
+@code {
+    private readonly IncomeForm IncomeForm = new() { Amount = 32500m, Source = "Salary" };
+    private readonly TaxSettingsForm AllocationForm = new();
+    private string Greeting => DateTime.Now.Hour switch
+    {
+        < 12 => "Good morning",
+        < 17 => "Good afternoon",
+        _ => "Good evening"
+    };
+    private string FirstName => Banking.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "there";
+    private IReadOnlyList<BankAccount> SpendableAccounts => Banking.Accounts.Where(account => account.Type != "Investment").ToList();
+    private decimal GrossPreview => IncomeForm.Amount is > 0 ? IncomeForm.Amount.Value : 0;
+    private decimal PreviewTax => decimal.Round(GrossPreview * Banking.Allocation.TaxPercent / 100m, 2);
+    private decimal PreviewInvestment => decimal.Round(GrossPreview * Banking.Allocation.InvestmentPercent / 100m, 2);
+    private decimal PreviewPersonal => GrossPreview - PreviewTax - PreviewInvestment;
+    private int PreviewPersonalPercent => 100 - AllocationForm.InvestmentPercent - AllocationForm.TaxReservePercent;
+
+    protected override void OnInitialized()
+    {
+        AllocationForm.InvestmentPercent = Banking.Allocation.InvestmentPercent;
+        AllocationForm.TaxReservePercent = Banking.Allocation.TaxPercent;
+        IncomeForm.AccountId = SpendableAccounts.FirstOrDefault()?.Id;
+    }
+
+    private string VisibleMoney(decimal amount) => Banking.IsBalanceVisible ? DemoBankingState.Money(amount) : "R •••••••";
+
+    private void AllocateIncome()
+    {
+        if (IncomeForm.Amount is not { } amount || IncomeForm.AccountId is not { } accountId)
+        {
+            return;
+        }
+
+        Banking.AllocateIncome(amount, accountId, IncomeForm.Source);
+    }
+
+    private void UpdateAllocation() => Banking.UpdateAllocation(
+        AllocationForm.InvestmentPercent,
+        AllocationForm.TaxReservePercent);
+}

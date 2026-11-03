@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/src/Presentation/">
+    <Project Path="src/ModernBank.API/ModernBank.API.csproj" />
+    <Project Path="src/ModernBank.Mobile/ModernBank.Mobile.csproj" />
+  </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Application/">
+    <Project Path="src/ModernBank.Application/ModernBank.Application.csproj" />
+  </Folder>
+  <Folder Name="/src/Domain/">
+    <Project Path="src/ModernBank.Domain/ModernBank.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Infrastructure/">
+    <Project Path="src/ModernBank.Infrastructure/ModernBank.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Contracts/">
+    <Project Path="src/ModernBank.Contracts/ModernBank.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Clients/">
+    <Project Path="src/ModernBank.HttpClient/ModernBank.Http_Client.csproj" />
+  </Folder>
+</Solution>

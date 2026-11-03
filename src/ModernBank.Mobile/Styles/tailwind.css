@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@source "../Components";
+
+@theme {
+    --font-display: "Lexend", "Segoe UI", sans-serif;
+    --font-body: "Source Sans 3", "Segoe UI", sans-serif;
+
+    --color-canvas: #f4f7fc;
+    --color-ink: #111b2d;
+    --color-secondary: #53627a;
+    --color-muted: #8290a4;
+    --color-stroke: #e6ebf2;
+    --color-brand: #2463eb;
+    --color-brand-deep: #174bc7;
+    --color-wash: #eaf1ff;
+    --color-mint: #d9f7ee;
+    --color-positive: #117a5b;
+    --color-investment: #168779;
+    --color-tax: #e7b74d;
+    --color-danger: #a3212a;
+    --color-danger-wash: #fff0f0;
+}

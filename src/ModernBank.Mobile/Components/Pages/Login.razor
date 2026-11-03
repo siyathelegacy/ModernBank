@@ -1,0 +1,94 @@
+@page "/login"
+@inject DemoBankingState Banking
+@inject NavigationManager Navigation
+
+<PageTitle>Sign in · Modern Bank</PageTitle>
+
+<div class="auth-page flex min-h-dvh flex-col bg-canvas">
+    <header class="mx-auto flex w-full max-w-[1080px] items-center justify-between px-5 py-5 sm:px-8">
+        <a class="flex items-center gap-3 text-ink no-underline" href="/login" aria-label="Modern Bank">
+            <BrandMark />
+            <span class="font-display text-lg font-semibold tracking-tight">modernbank</span>
+        </a>
+        <p class="text-sm text-secondary">New here?
+            <a class="ml-1 font-semibold text-brand hover:text-brand-deep" href="/register">Create a profile</a>
+        </p>
+    </header>
+
+    <main id="main-content" class="mx-auto grid w-full max-w-[960px] flex-1 items-start gap-8 px-4 pb-12 pt-5 sm:px-8 lg:grid-cols-[1fr_0.9fr] lg:items-center lg:gap-14">
+        <section class="max-w-lg lg:py-12">
+            <p class="inline-flex items-center gap-2 rounded-full border border-stroke bg-white px-3 py-1.5 text-sm font-medium text-secondary">
+                <AppIcon Name="lock" Class="size-4 text-positive" />
+                A demo space, not your bank
+            </p>
+            <h1 class="mt-5 font-display text-3xl font-semibold leading-tight tracking-[-0.04em] sm:text-4xl">Welcome back.</h1>
+            <p class="mt-3 max-w-md leading-6 text-secondary">Continue exploring how a separate SARS reserve can make tax time feel more predictable.</p>
+            <p class="mt-6 max-w-md rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-5 text-amber-900">
+                Do not enter your real banking password. Sign-in is simulated and happens only inside this app preview.
+            </p>
+        </section>
+
+        <section class="w-full rounded-[26px] border border-stroke bg-white p-5 shadow-[0_20px_55px_-42px_rgba(17,27,45,0.42)] sm:p-7" aria-labelledby="login-heading">
+            <h2 id="login-heading" class="font-display text-xl font-semibold tracking-tight">Sign in to your demo profile</h2>
+            <p class="mt-1 text-sm text-secondary">Use any email and password with 8 or more characters.</p>
+
+            <EditForm Model="@Form" OnValidSubmit="SignIn" class="mt-6 space-y-5">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="rounded-xl border border-danger/20 bg-danger-wash px-4 py-3 text-sm text-danger" role="alert" />
+                <div class="form-field">
+                    <label for="login-email" class="field-label">Email address</label>
+                    <InputText id="login-email" @bind-Value="Form.Email" class="field-control" type="email" autocomplete="username" inputmode="email" />
+                    <ValidationMessage For="() => Form.Email" class="field-error" />
+                </div>
+                <div class="form-field">
+                    <label for="login-password" class="field-label">Password</label>
+                    <InputText id="login-password" @bind-Value="Form.Password" class="field-control" type="password" autocomplete="current-password" />
+                    <ValidationMessage For="() => Form.Password" class="field-error" />
+                </div>
+                <button class="primary-button w-full" type="submit">Continue to the demo</button>
+            </EditForm>
+
+            <div class="my-5 flex items-center gap-3 text-xs text-muted">
+                <span class="h-px flex-1 bg-stroke"></span>
+                Choose a preview instead
+                <span class="h-px flex-1 bg-stroke"></span>
+            </div>
+            <button class="secondary-button w-full" type="button" @onclick="UseSampleProfile">Use sample taxpayer profile</button>
+            <button class="mt-3 flex min-h-11 w-full items-center justify-center rounded-xl px-3 text-sm font-semibold text-secondary transition-colors hover:bg-canvas hover:text-ink" type="button" @onclick="OpenAdminPreview">
+                <AppIcon Name="government" Class="mr-2 size-4" />
+                Open SARS admin preview
+            </button>
+            <p class="mt-3 text-center text-xs leading-5 text-secondary">The admin preview is role-gated in the demo; it is not connected to SARS.</p>
+        </section>
+    </main>
+</div>
+
+@code {
+    private readonly LoginForm Form = new();
+
+    protected override void OnInitialized()
+    {
+        if (Banking.IsAuthenticated)
+        {
+            Navigation.NavigateTo(Banking.IsSarsAdmin ? "/sars-admin" : "/dashboard", replace: true);
+        }
+    }
+
+    private void SignIn()
+    {
+        Banking.SignInDemo(Form.Email);
+        Navigation.NavigateTo("/dashboard");
+    }
+
+    private void UseSampleProfile()
+    {
+        Banking.SignInDemo("maya@example.co.za");
+        Navigation.NavigateTo("/dashboard");
+    }
+
+    private void OpenAdminPreview()
+    {
+        Banking.SignInSarsAdminDemo();
+        Navigation.NavigateTo("/sars-admin");
+    }
+}

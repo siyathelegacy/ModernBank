@@ -1,0 +1,52 @@
+@if (!Transactions.Any())
+{
+    <p class="rounded-2xl bg-canvas px-4 py-6 text-center text-sm text-secondary">@EmptyMessage</p>
+}
+else
+{
+    <ul class="divide-y divide-stroke">
+        @foreach (var transaction in Transactions)
+        {
+            <li class="flex min-h-[68px] items-center gap-3 py-3 first:pt-0 last:pb-0 sm:gap-4">
+                <span class="@GetIconBackground(transaction) grid size-11 shrink-0 place-items-center rounded-2xl">
+                    <AppIcon Name="@GetIcon(transaction)" Class="size-5" />
+                </span>
+                <span class="min-w-0 flex-1">
+                    <span class="block truncate text-sm font-semibold text-ink">@transaction.Name</span>
+                    <span class="mt-0.5 block truncate text-xs text-secondary">@transaction.Category <span aria-hidden="true">·</span> @transaction.Date.ToString("d MMM")</span>
+                </span>
+                <span class="shrink-0 text-right">
+                    <span class="@GetAmountClass(transaction) block text-sm font-semibold">@DemoBankingState.Money(transaction.Amount)</span>
+                    <span class="mt-0.5 block text-xs text-secondary">@transaction.AccountName</span>
+                </span>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter, EditorRequired] public IEnumerable<MoneyMovement> Transactions { get; set; } = [];
+    [Parameter] public string EmptyMessage { get; set; } = "There’s no activity here yet.";
+
+    private static string GetIconBackground(MoneyMovement transaction) => transaction.Amount > 0
+        ? "bg-mint text-positive"
+        : transaction.Category switch
+        {
+            "Tax allocation" or "Tax payment" => "bg-amber-50 text-amber-900",
+            "Investment" => "bg-teal-50 text-teal-800",
+            _ => "bg-canvas text-secondary"
+        };
+
+    private static string GetAmountClass(MoneyMovement transaction) =>
+        transaction.Amount > 0 ? "text-positive" : "text-ink";
+
+    private static string GetIcon(MoneyMovement transaction) => transaction.Category switch
+    {
+        "Income received" => "income",
+        "Investment" => "trend",
+        "Tax allocation" or "Tax payment" => "shield",
+        "Deposit" => "plus",
+        "Transfer" or "Transfer received" => "transfer",
+        _ => "receipt"
+    };
+}

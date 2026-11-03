@@ -1,0 +1,90 @@
+@page "/sars-admin/review/{RequestId:guid}"
+@using Microsoft.AspNetCore.Components
+@inject DemoBankingState Banking
+@inject NavigationManager Navigation
+
+<PageTitle>Review refund request · SARS preview</PageTitle>
+
+<div class="mx-auto max-w-3xl px-4 py-6 sm:px-7 lg:px-10 lg:py-9">
+    <a class="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-semibold text-brand hover:bg-wash" href="/sars-admin"><AppIcon Name="chevron-right" Class="size-4 rotate-180" />Back to SARS review</a>
+
+    @if (!Banking.IsSarsAdmin)
+    {
+        <section class="mt-4 rounded-2xl border border-stroke bg-white p-6">
+            <h1 class="font-display text-xl font-semibold">SARS administrator role required</h1>
+            <p class="mt-2 leading-6 text-secondary">Sign in to the local admin preview to review this fictional request.</p>
+            <a class="primary-button mt-5 inline-flex" href="/login">Go to sign in</a>
+        </section>
+    }
+    else if (Request is null)
+    {
+        <section class="mt-4 rounded-2xl border border-stroke bg-white p-6">
+            <h1 class="font-display text-xl font-semibold">Request not found</h1>
+            <p class="mt-2 leading-6 text-secondary">This sample request may have been removed or already changed.</p>
+            <a class="primary-button mt-5 inline-flex" href="/sars-admin">Return to requests</a>
+        </section>
+    }
+    else
+    {
+        <section class="mt-4 rounded-2xl border border-stroke bg-white p-5 sm:p-8" aria-labelledby="review-heading">
+            <span class="inline-flex items-center gap-2 rounded-full bg-wash px-3 py-1.5 text-sm font-semibold text-brand"><AppIcon Name="government" Class="size-4" />Demo review</span>
+            <h1 id="review-heading" class="mt-4 font-display text-2xl font-semibold tracking-tight">Review refund request</h1>
+            <p class="mt-2 leading-6 text-secondary">Check the sample request below before marking it authorized.</p>
+            <dl class="mt-5 divide-y divide-stroke rounded-xl bg-canvas px-4">
+                <div class="flex justify-between gap-3 py-3"><dt class="text-secondary">Taxpayer</dt><dd class="text-right font-semibold">@Request.Taxpayer</dd></div>
+                <div class="flex justify-between gap-3 py-3"><dt class="text-secondary">Account type</dt><dd class="text-right font-semibold">@Request.AccountType</dd></div>
+                <div class="flex justify-between gap-3 py-3"><dt class="text-secondary">Request reference</dt><dd class="text-right font-semibold">@Request.Reference</dd></div>
+                <div class="flex justify-between gap-3 py-3"><dt class="text-secondary">Submitted</dt><dd class="text-right font-semibold">@Request.Submitted.ToString("d MMM yyyy")</dd></div>
+                <div class="flex justify-between gap-3 py-3"><dt class="text-secondary">Requested amount</dt><dd class="text-right font-semibold">@DemoBankingState.Money(Request.Amount)</dd></div>
+            </dl>
+            <p class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-5 text-amber-950">Marking this request authorized only changes its demo status. No refund will be issued.</p>
+            @if (Request.IsAuthorized)
+            {
+                <p class="mt-4 rounded-xl bg-mint px-4 py-3 text-sm font-semibold text-positive" role="status">This sample request has already been marked authorized.</p>
+                <a class="secondary-button mt-5 inline-flex" href="/sars-admin">Return to requests</a>
+            }
+            else
+            {
+                @if (ReviewError is not null)
+                {
+                    <p class="mt-4 rounded-xl border border-danger/20 bg-danger-wash px-4 py-3 text-sm text-danger" role="alert">@ReviewError</p>
+                }
+                <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                    <a class="secondary-button" href="/sars-admin">Cancel</a>
+                    <button class="primary-button" type="button" @onclick="ConfirmAuthorization">Mark as authorized</button>
+                </div>
+            }
+        </section>
+    }
+    <p class="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-5 text-amber-950">Role restriction is a local UI demonstration, not production access control. No taxpayer data or actual refund processing is involved.</p>
+</div>
+
+@code {
+    [Parameter]
+    public Guid RequestId { get; set; }
+
+    private SarsRefundRequest? Request => Banking.RefundRequests.SingleOrDefault(request => request.Id == RequestId);
+    private string? ReviewError { get; set; }
+
+    private void ConfirmAuthorization()
+    {
+        ReviewError = null;
+        try
+        {
+            Banking.AuthorizeRefund(RequestId);
+            Navigation.NavigateTo("/sars-admin");
+        }
+        catch (InvalidOperationException exception)
+        {
+            ReviewError = exception.Message;
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            ReviewError = exception.Message;
+        }
+        catch (KeyNotFoundException exception)
+        {
+            ReviewError = exception.Message;
+        }
+    }
+}

@@ -1,0 +1,15 @@
+<div class="mt-7" role="img" aria-label="@Description">
+    <div class="flex h-36 items-end justify-between gap-2 sm:gap-4" aria-hidden="true">
+        @foreach (var bar in Bars)
+        {
+            <div class="flex h-full flex-1 items-end justify-center">
+                <span class="w-full max-w-10 rounded-t-lg bg-brand/15 transition-colors first:bg-brand/30 last:bg-brand/30" style='height: @(bar.Height)%'></span>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<SpendingBar> Bars { get; set; } = [];
+    [Parameter, EditorRequired] public string Description { get; set; } = string.Empty;
+}

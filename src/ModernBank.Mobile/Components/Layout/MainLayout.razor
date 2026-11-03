@@ -1,0 +1,166 @@
+﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject ModernBank.Services.DemoBankingState Banking
+@inject NavigationManager Navigation
+
+@if (IsPublicPage)
+{
+    <div class="min-h-dvh bg-canvas text-ink">
+        @Body
+    </div>
+}
+else
+{
+    <div class="min-h-dvh bg-canvas text-ink lg:grid lg:grid-cols-[244px_minmax(0,1fr)]">
+        <a class="skip-link" href="#main-content">Skip to content</a>
+
+        <aside class="hidden h-dvh flex-col border-r border-stroke bg-white px-5 py-7 lg:sticky lg:top-0 lg:flex" aria-label="Primary navigation">
+            <a class="flex items-center gap-3 px-2 text-ink no-underline" href="@(Banking.IsSarsAdmin ? "/sars-admin" : "/dashboard")" aria-label="Modern Bank home">
+                <span class="grid size-10 place-items-center rounded-2xl bg-brand font-display text-lg font-semibold text-white">m</span>
+                <span class="font-display text-lg font-semibold tracking-tight">modernbank</span>
+            </a>
+
+            <nav class="mt-10 flex flex-col gap-2">
+                @foreach (var item in NavigationItems)
+                {
+                    if (item.AdminOnly != Banking.IsSarsAdmin)
+                    {
+                        continue;
+                    }
+
+                    <NavLink class="desktop-navigation-link" href="@item.Path" Match="NavLinkMatch.All" aria-current="@(IsCurrentPage(item.Path) ? "page" : null)">
+                        <AppIcon Name="@item.Icon" Class="size-5 shrink-0" />
+                        <span>@item.Label</span>
+                    </NavLink>
+                }
+            </nav>
+
+            @if (!Banking.IsSarsAdmin)
+            {
+                <div class="mt-auto rounded-2xl bg-canvas p-4">
+                    <p class="font-display text-sm font-semibold">Your money, in focus.</p>
+                    <p class="mt-1 text-sm leading-5 text-secondary">Tax money stays separate until you choose what happens next.</p>
+                </div>
+                <button class="mt-5 flex min-h-14 items-center gap-3 rounded-xl px-2 text-left hover:bg-canvas" type="button" @onclick='() => Navigation.NavigateTo("/profile")'>
+                    <span class="grid size-10 shrink-0 place-items-center rounded-full bg-wash font-display text-sm font-semibold text-brand">@Initials</span>
+                    <span class="min-w-0 flex-1">
+                        <span class="block truncate font-semibold">@Banking.FullName</span>
+                        <span class="block text-sm text-secondary">@DemoBankingState.CustomerTypeName(Banking.CustomerType)</span>
+                    </span>
+                    <AppIcon Name="more" Class="size-5 text-muted" />
+                </button>
+            }
+            else
+            {
+                <button class="mt-auto flex min-h-11 items-center gap-2 rounded-xl px-3 text-left text-sm font-semibold text-secondary hover:bg-canvas hover:text-ink" type="button" @onclick="SignOut">
+                    <AppIcon Name="user" Class="size-5" />Sign out of preview
+                </button>
+            }
+        </aside>
+
+        <div class="min-w-0">
+            <main id="main-content" class="min-h-dvh pb-24 lg:pb-10">
+                @if (Banking.Notice is { Length: > 0 } notice)
+                {
+                    <div class="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:left-auto sm:right-6 sm:max-w-md" role="status" aria-live="polite">
+                        <div class="flex min-h-14 items-center gap-3 rounded-2xl border border-positive/20 bg-white px-4 py-3 shadow-[0_12px_35px_-16px_rgba(17,27,45,0.4)]">
+                            <span class="grid size-8 shrink-0 place-items-center rounded-full bg-mint text-positive"><AppIcon Name="check" Class="size-4" /></span>
+                            <p class="flex-1 text-sm font-medium">@notice</p>
+                            <button class="grid size-11 shrink-0 place-items-center rounded-xl text-secondary hover:bg-canvas" type="button" aria-label="Dismiss message" @onclick="Banking.ClearNotice">
+                                <AppIcon Name="close" Class="size-4" />
+                            </button>
+                        </div>
+                    </div>
+                }
+                @Body
+            </main>
+        </div>
+
+        <nav class="mobile-navigation safe-bottom fixed inset-x-0 bottom-0 z-30 grid @(Banking.IsSarsAdmin ? "grid-cols-1" : "grid-cols-5") border-t border-stroke bg-white/95 px-1 pt-2 shadow-[0_-8px_24px_-20px_rgba(17,27,45,0.4)] backdrop-blur-md lg:hidden" aria-label="Primary navigation">
+            @foreach (var item in NavigationItems.Where(item => item.AdminOnly == Banking.IsSarsAdmin))
+            {
+                <NavLink class="mobile-navigation-link" href="@item.Path" Match="NavLinkMatch.All" aria-current="@(IsCurrentPage(item.Path) ? "page" : null)">
+                    <AppIcon Name="@item.Icon" Class="size-5" />
+                    <span>@item.MobileLabel</span>
+                </NavLink>
+            }
+        </nav>
+    </div>
+}
+
+@code {
+    private static readonly NavigationItem[] NavigationItems =
+    [
+        new("Home", "Home", "/dashboard", "home"),
+        new("Accounts", "Accounts", "/accounts", "card"),
+        new("Move money", "Move", "/transfer", "transfer"),
+        new("Tax", "Tax", "/tax", "shield"),
+        new("Profile", "Profile", "/profile", "user"),
+        new("SARS", "SARS", "/sars-admin", "government", true)
+    ];
+
+    private string CurrentPath => Navigation.ToBaseRelativePath(Navigation.Uri).TrimEnd('/');
+    private bool IsPublicPage => CurrentPath is "register" or "login" or "";
+    private string Initials => string.Join(string.Empty, Banking.FullName
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .Take(2)
+        .Select(name => char.ToUpperInvariant(name[0])));
+
+    protected override void OnInitialized()
+    {
+        Banking.Changed += OnBankingChanged;
+        Navigation.LocationChanged += OnLocationChanged;
+        EnforceRouteAccess();
+    }
+
+    private void OnBankingChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args)
+    {
+        EnforceRouteAccess();
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void EnforceRouteAccess()
+    {
+        if (IsPublicPage)
+        {
+            return;
+        }
+
+        if (!Banking.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login", replace: true);
+            return;
+        }
+
+        if (Banking.IsSarsAdmin
+            && !CurrentPath.Equals("sars-admin", StringComparison.OrdinalIgnoreCase)
+            && !CurrentPath.StartsWith("sars-admin/review/", StringComparison.OrdinalIgnoreCase))
+        {
+            Navigation.NavigateTo("/sars-admin", replace: true);
+            return;
+        }
+
+        if (CurrentPath == "sars-admin" && !Banking.IsSarsAdmin)
+        {
+            Navigation.NavigateTo("/dashboard", replace: true);
+        }
+    }
+
+    private bool IsCurrentPage(string path) => CurrentPath.Equals(path.TrimStart('/'), StringComparison.OrdinalIgnoreCase);
+
+    private void SignOut()
+    {
+        Banking.SignOut();
+        Navigation.NavigateTo("/login", replace: true);
+    }
+
+    public void Dispose()
+    {
+        Banking.Changed -= OnBankingChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+
+    private sealed record NavigationItem(string Label, string MobileLabel, string Path, string Icon, bool AdminOnly = false);
+}

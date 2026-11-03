@@ -1,0 +1,198 @@
+@page "/transfer"
+@using Microsoft.AspNetCore.Components
+@inject DemoBankingState Banking
+
+<PageTitle>Move money · Modern Bank</PageTitle>
+
+<div class="mx-auto max-w-4xl px-4 py-6 sm:px-7 lg:px-10 lg:py-9">
+    <header class="mb-6">
+        <p class="text-sm text-secondary">Deposits, transfers and withdrawals</p>
+        <h1 class="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl">Move money</h1>
+        <p class="mt-2 max-w-xl leading-6 text-secondary">Choose what to do and review the account and amount before recording it in this local demo.</p>
+    </header>
+
+    <section class="overflow-hidden rounded-2xl border border-stroke bg-white">
+        <div class="grid grid-cols-3 border-b border-stroke bg-canvas p-1.5" role="group" aria-label="Money movement type">
+            @foreach (var (type, label, icon) in MovementOptions)
+            {
+                <button class="@GetTabClass(type)" type="button" aria-pressed="@(Form.Type == type)" @onclick="() => SelectType(type)">
+                    <AppIcon Name="@icon" Class="size-4" /><span>@label</span>
+                </button>
+            }
+        </div>
+
+        <div class="p-5 sm:p-8">
+            <div class="mb-6">
+                <h2 class="font-display text-xl font-semibold">@CurrentTitle</h2>
+                <p class="mt-1 text-sm leading-5 text-secondary">@CurrentDescription</p>
+            </div>
+            <EditForm Model="@Form" OnValidSubmit="SubmitMovement" class="space-y-5">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="rounded-xl border border-danger/20 bg-danger-wash px-4 py-3 text-sm text-danger" role="alert" />
+                <div class="grid gap-5 sm:grid-cols-2">
+                    <div class="form-field">
+                        <label class="field-label" for="movement-source">@(Form.Type == MoneyMovementType.Deposit ? "Add demo money to" : "From account")</label>
+                        <InputSelect id="movement-source" @bind-Value="Form.AccountId" @bind-Value:after="ResetDestination" class="field-control">
+                            @foreach (var account in SpendableAccounts)
+                            {
+                                <option value="@account.Id">@account.Name · @FormatAccountBalance(account.Balance)</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => Form.AccountId" class="field-error" />
+                    </div>
+                    <div class="form-field">
+                        <label class="field-label" for="movement-amount">Amount</label>
+                        <div class="relative">
+                            <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-semibold text-secondary">R</span>
+                            <InputNumber id="movement-amount" @bind-Value="Form.Amount" class="field-control pl-8" min="1" step="0.01" inputmode="decimal" />
+                        </div>
+                        <ValidationMessage For="() => Form.Amount" class="field-error" />
+                    </div>
+                </div>
+
+                @if (Form.Type == MoneyMovementType.Deposit)
+                {
+                    <div class="form-field">
+                        <label class="field-label" for="deposit-note">Deposit note</label>
+                        <InputText id="deposit-note" @bind-Value="Form.Reference" class="field-control" maxlength="120" placeholder="e.g. Cash deposit" />
+                        <ValidationMessage For="() => Form.Reference" class="field-error" />
+                        <p class="field-hint">This adds sample money to your selected available account. It is not a real deposit.</p>
+                    </div>
+                }
+                else if (Form.Type == MoneyMovementType.Transfer)
+                {
+                    <div class="form-field">
+                        <label class="field-label" for="transfer-destination">Send to</label>
+                        <InputSelect id="transfer-destination" @bind-Value="Form.DestinationAccountId" class="field-control">
+                            <option value="">Someone else (demo recipient)</option>
+                            @foreach (var account in DestinationAccounts)
+                            {
+                                <option value="@account.Id">@account.Name · @FormatAccountBalance(account.Balance)</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => Form.DestinationAccountId" class="field-error" />
+                    </div>
+                    @if (Form.DestinationAccountId is null)
+                    {
+                        <div class="form-field">
+                            <label class="field-label" for="transfer-recipient">Recipient name</label>
+                            <InputText id="transfer-recipient" @bind-Value="Form.Recipient" class="field-control" maxlength="100" placeholder="Person or business" />
+                            <ValidationMessage For="() => Form.Recipient" class="field-error" />
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="rounded-xl bg-wash px-4 py-3 text-sm leading-5 text-brand-deep">This moves the demo balance between your selected accounts. Choose “Someone else” to preview a peer transfer.</p>
+                    }
+                }
+                else
+                {
+                    <p class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-5 text-amber-950">Withdrawals only use available primary or savings balances. Investment and frozen SARS balances are not available in this flow.</p>
+                }
+
+                @if (MovementError is not null)
+                {
+                    <p class="rounded-xl border border-danger/20 bg-danger-wash px-4 py-3 text-sm leading-5 text-danger" role="alert">@MovementError</p>
+                }
+                <button class="primary-button w-full" type="submit">@ActionText</button>
+            </EditForm>
+        </div>
+    </section>
+
+    <p class="mt-5 rounded-xl border border-stroke bg-white px-4 py-3 text-sm leading-5 text-secondary">This prototype simulates account changes in memory only. It does not connect to a bank or send money to another person.</p>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "type")]
+    public string? InitialType { get; set; }
+
+    [SupplyParameterFromQuery(Name = "source")]
+    public Guid? InitialSource { get; set; }
+
+    private readonly MoneyMovementForm Form = new() { Type = MoneyMovementType.Transfer, Amount = 250m };
+    private string? MovementError { get; set; }
+    private IReadOnlyList<BankAccount> SpendableAccounts => Banking.Accounts.Where(account => account.Type != "Investment").ToList();
+    private IReadOnlyList<BankAccount> DestinationAccounts => Banking.Accounts.Where(account => account.Id != Form.AccountId).ToList();
+    private string CurrentTitle => Form.Type switch
+    {
+        MoneyMovementType.Deposit => "Add demo money",
+        MoneyMovementType.Withdrawal => "Withdraw from an account",
+        _ => "Transfer money"
+    };
+    private string CurrentDescription => Form.Type switch
+    {
+        MoneyMovementType.Deposit => "Record a sample deposit in one of your available accounts.",
+        MoneyMovementType.Withdrawal => "Reduce the available balance in your chosen account.",
+        _ => "Move money to another demo account or enter a peer recipient."
+    };
+    private string ActionText => Form.Type switch
+    {
+        MoneyMovementType.Deposit => "Record demo deposit",
+        MoneyMovementType.Withdrawal => "Record withdrawal",
+        _ => "Review and record transfer"
+    };
+
+    private static readonly (MoneyMovementType Type, string Label, string Icon)[] MovementOptions =
+    [
+        (MoneyMovementType.Deposit, "Deposit", "plus"),
+        (MoneyMovementType.Transfer, "Transfer", "transfer"),
+        (MoneyMovementType.Withdrawal, "Withdraw", "receipt")
+    ];
+
+    protected override void OnParametersSet()
+    {
+        if (Enum.TryParse<MoneyMovementType>(InitialType, true, out var type))
+        {
+            Form.Type = type;
+        }
+
+        if (InitialSource is { } source && SpendableAccounts.Any(account => account.Id == source))
+        {
+            Form.AccountId = source;
+        }
+        else if (Form.AccountId is null || !SpendableAccounts.Any(account => account.Id == Form.AccountId))
+        {
+            Form.AccountId = SpendableAccounts.FirstOrDefault()?.Id;
+        }
+
+        ResetDestination();
+    }
+
+    private string GetTabClass(MoneyMovementType type) =>
+        "flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-2 text-sm font-semibold transition-colors " +
+        (Form.Type == type ? "bg-white text-brand shadow-sm" : "text-secondary hover:bg-white/70");
+
+    private void SelectType(MoneyMovementType type)
+    {
+        Form.Type = type;
+        MovementError = null;
+        Form.Recipient = string.Empty;
+        Form.Reference = type == MoneyMovementType.Deposit ? "Demo deposit" : string.Empty;
+        ResetDestination();
+    }
+
+    private void ResetDestination() => Form.DestinationAccountId = null;
+
+    private string FormatAccountBalance(decimal amount) =>
+        Banking.IsBalanceVisible ? DemoBankingState.Money(amount) : "R •••••••";
+
+    private void SubmitMovement()
+    {
+        MovementError = null;
+        try
+        {
+            Banking.MoveMoney(Form);
+            Form.Amount = null;
+            Form.Recipient = string.Empty;
+            Form.Reference = Form.Type == MoneyMovementType.Deposit ? "Demo deposit" : string.Empty;
+        }
+        catch (InvalidOperationException exception)
+        {
+            MovementError = exception.Message;
+        }
+        catch (ArgumentException exception)
+        {
+            MovementError = exception.Message;
+        }
+    }
+}

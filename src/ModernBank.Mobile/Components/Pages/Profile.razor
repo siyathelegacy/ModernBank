@@ -1,0 +1,114 @@
+@page "/profile"
+@inject DemoBankingState Banking
+@inject NavigationManager Navigation
+
+<PageTitle>Profile and settings · Modern Bank</PageTitle>
+
+<div class="mx-auto max-w-4xl px-4 py-6 sm:px-7 lg:px-10 lg:py-9">
+    <header class="mb-6">
+        <p class="text-sm text-secondary">Personal details and app preferences</p>
+        <h1 class="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl">Profile &amp; settings</h1>
+        <p class="mt-2 max-w-xl leading-6 text-secondary">Keep your demo contact information current. Your details stay in local app memory and are not verified.</p>
+    </header>
+
+    <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(260px,0.9fr)]">
+        <section class="rounded-2xl border border-stroke bg-white p-5 sm:p-7" aria-labelledby="profile-details-heading">
+            <div class="flex items-center gap-3">
+                <span class="grid size-11 place-items-center rounded-full bg-wash font-display font-semibold text-brand">@Initials</span>
+                <div>
+                    <h2 id="profile-details-heading" class="font-display text-lg font-semibold">Your details</h2>
+                    <p class="text-sm text-secondary">@DemoBankingState.CustomerTypeName(Banking.CustomerType)</p>
+                </div>
+            </div>
+            <EditForm Model="@Form" OnValidSubmit="SaveProfile" class="mt-6 space-y-5">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="rounded-xl border border-danger/20 bg-danger-wash px-4 py-3 text-sm text-danger" role="alert" />
+                <div class="form-field">
+                    <label class="field-label" for="profile-name">Full legal name</label>
+                    <InputText id="profile-name" @bind-Value="Form.FullName" class="field-control" autocomplete="name" maxlength="100" />
+                    <ValidationMessage For="() => Form.FullName" class="field-error" />
+                </div>
+                @if (Banking.CustomerType is CustomerType.Organization or CustomerType.PrivateCompany)
+                {
+                    <div class="form-field">
+                        <label class="field-label" for="profile-organization">Registered organization or company name</label>
+                        <InputText id="profile-organization" @bind-Value="Form.OrganizationName" class="field-control" maxlength="100" autocomplete="organization" />
+                        <ValidationMessage For="() => Form.OrganizationName" class="field-error" />
+                    </div>
+                }
+                <div class="form-field">
+                    <label class="field-label" for="profile-email">Email address</label>
+                    <InputText id="profile-email" @bind-Value="Form.Email" class="field-control" type="email" autocomplete="email" inputmode="email" maxlength="254" />
+                    <ValidationMessage For="() => Form.Email" class="field-error" />
+                </div>
+                <div class="form-field">
+                    <label class="field-label" for="profile-mobile">South African cellphone number</label>
+                    <InputText id="profile-mobile" @bind-Value="Form.MobileNumber" class="field-control" type="tel" autocomplete="tel" inputmode="tel" placeholder="082 123 4567 or +27 82 123 4567" />
+                    <ValidationMessage For="() => Form.MobileNumber" class="field-error" />
+                </div>
+                <div class="form-field">
+                    <label class="field-label" for="profile-tax-reference">Tax reference number</label>
+                    <InputText id="profile-tax-reference" @bind-Value="Form.TaxReference" class="field-control" inputmode="numeric" autocomplete="off" maxlength="10" />
+                    <p class="field-hint">Optional until you use tax features. Enter 10 digits.</p>
+                    <ValidationMessage For="() => Form.TaxReference" class="field-error" />
+                </div>
+                <button class="primary-button w-full" type="submit">Save profile details</button>
+            </EditForm>
+        </section>
+
+        <aside class="space-y-4">
+            <section class="rounded-2xl border border-stroke bg-white p-5">
+                <h2 class="font-display text-lg font-semibold">Balance display</h2>
+                <p class="mt-1 text-sm leading-5 text-secondary">Hide or show balances throughout the app.</p>
+                <button class="secondary-button mt-4 w-full" type="button" aria-pressed="@Banking.IsBalanceVisible" @onclick="ToggleBalanceVisibility">
+                    <AppIcon Name="@(Banking.IsBalanceVisible ? "eye-off" : "eye")" Class="size-4" />
+                    @(Banking.IsBalanceVisible ? "Hide balances" : "Show balances")
+                </button>
+            </section>
+            <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                <h2 class="font-display text-lg font-semibold text-amber-950">Demo privacy</h2>
+                <p class="mt-2 text-sm leading-5 text-amber-950">This prototype does not verify identities, open accounts or contact a bank. Avoid entering sensitive real-world information.</p>
+            </section>
+            <button class="secondary-button w-full" type="button" @onclick="SignOut">
+                <AppIcon Name="user" Class="size-4" />Sign out of demo
+            </button>
+        </aside>
+    </div>
+</div>
+
+@code {
+    private readonly ProfileForm Form = new();
+    private string Initials => string.Join(string.Empty, Banking.FullName
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .Take(2)
+        .Select(name => char.ToUpperInvariant(name[0])));
+
+    protected override void OnInitialized()
+    {
+        Form.FullName = Banking.FullName;
+        Form.Email = Banking.Email;
+        Form.MobileNumber = Banking.MobileNumber;
+        Form.TaxReference = Banking.TaxReference;
+        Form.OrganizationName = Banking.OrganizationName;
+        Form.CustomerType = Banking.CustomerType;
+    }
+
+    private void SaveProfile() => Banking.UpdateProfile(
+        Form.FullName,
+        Form.Email,
+        Form.MobileNumber,
+        Form.TaxReference,
+        Form.OrganizationName);
+
+    private void ToggleBalanceVisibility()
+    {
+        Banking.IsBalanceVisible = !Banking.IsBalanceVisible;
+        Banking.ClearNotice();
+    }
+
+    private void SignOut()
+    {
+        Banking.SignOut();
+        Navigation.NavigateTo("/login", replace: true);
+    }
+}

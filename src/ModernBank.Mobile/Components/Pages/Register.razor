@@ -1,0 +1,265 @@
+@page "/register"
+@using System.ComponentModel.DataAnnotations
+@using System.Text.RegularExpressions
+@inject DemoBankingState Banking
+@inject NavigationManager Navigation
+
+<PageTitle>Open a demo profile · Modern Bank</PageTitle>
+
+<div class="auth-page min-h-dvh bg-canvas">
+    <header class="mx-auto flex w-full max-w-[1080px] items-center justify-between px-5 py-5 sm:px-8">
+        <a class="flex items-center gap-3 text-ink no-underline" href="/register" aria-label="Modern Bank">
+            <BrandMark />
+            <span class="font-display text-lg font-semibold tracking-tight">modernbank</span>
+        </a>
+        <p class="text-sm text-secondary">Already here?
+            <a class="ml-1 font-semibold text-brand hover:text-brand-deep" href="/login">Sign in</a>
+        </p>
+    </header>
+
+    <main id="main-content" class="mx-auto grid w-full max-w-[1080px] grid-cols-1 items-start gap-8 px-4 pb-10 pt-3 sm:px-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16 lg:pt-12">
+        <section class="pt-2 lg:pt-8">
+            <p class="inline-flex items-center gap-2 rounded-full border border-stroke bg-white px-3 py-1.5 text-sm font-medium text-secondary">
+                <span class="size-2 rounded-full bg-positive" aria-hidden="true"></span>
+                Built for money in South Africa
+            </p>
+            <h1 class="mt-5 max-w-lg font-display text-[2rem] font-semibold leading-tight tracking-[-0.045em] sm:text-[2.75rem]">
+                Keep your tax money in its own corner.
+            </h1>
+            <p class="mt-4 max-w-md text-base leading-7 text-secondary">
+                See what’s yours to spend, what you’re saving and what you’ve set aside for SARS—all in one calm view.
+            </p>
+
+            <div class="mt-7 grid max-w-md grid-cols-3 gap-3" aria-label="How your income is divided">
+                <div class="rounded-2xl border border-stroke bg-white p-3 sm:p-4">
+                    <span class="block size-2.5 rounded-full bg-brand" aria-hidden="true"></span>
+                    <p class="mt-3 text-sm font-semibold">Personal</p>
+                    <p class="mt-1 text-xs text-secondary">Available</p>
+                </div>
+                <div class="rounded-2xl border border-stroke bg-white p-3 sm:p-4">
+                    <span class="block size-2.5 rounded-full bg-investment" aria-hidden="true"></span>
+                    <p class="mt-3 text-sm font-semibold">Investment</p>
+                    <p class="mt-1 text-xs text-secondary">Growing</p>
+                </div>
+                <div class="rounded-2xl border border-stroke bg-amber-50 p-3 sm:p-4">
+                    <span class="block size-2.5 rounded-full bg-tax" aria-hidden="true"></span>
+                    <p class="mt-3 text-sm font-semibold">SARS</p>
+                    <p class="mt-1 text-xs text-secondary">Kept separate</p>
+                </div>
+            </div>
+
+            <p class="mt-5 max-w-md rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-5 text-amber-900">
+                <strong>Prototype notice.</strong> This app uses sample data only. It does not open accounts, verify your identity, give tax advice or move money.
+            </p>
+        </section>
+
+        <section class="mx-auto w-full max-w-xl rounded-[26px] border border-stroke bg-white p-5 shadow-[0_20px_55px_-42px_rgba(17,27,45,0.42)] sm:p-7 lg:p-8" aria-labelledby="registration-heading">
+            <div class="flex items-center gap-3">
+                <span class="grid size-10 place-items-center rounded-xl bg-wash font-display text-sm font-semibold text-brand">@CurrentStep</span>
+                <div>
+                    <p class="text-sm text-secondary">Step @CurrentStep of 2</p>
+                    <h2 id="registration-heading" class="font-display text-xl font-semibold tracking-tight">@(CurrentStep == 1 ? "Your details" : "Identity and security")</h2>
+                </div>
+            </div>
+            <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-canvas" role="progressbar" aria-label="Registration progress" aria-valuemin="1" aria-valuemax="2" aria-valuenow="@CurrentStep">
+                <span class="block h-full rounded-full bg-brand transition-[width] duration-200" style="@($"width: {CurrentStep * 50}%")"></span>
+            </div>
+
+            <EditForm EditContext="@EditContext" class="mt-6 space-y-5">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="rounded-xl border border-danger/20 bg-danger-wash px-4 py-3 text-sm text-danger" role="alert" />
+
+                @if (CurrentStep == 1)
+                {
+                    <fieldset>
+                        <legend class="mb-2 text-sm font-semibold">What kind of account do you need?</legend>
+                        <InputSelect TValue="CustomerType?" @bind-Value="Form.CustomerType" class="field-control" aria-label="Account type">
+                            <option value="">Choose account type</option>
+                            <option value="@CustomerType.Individual">Individual</option>
+                            <option value="@CustomerType.Organization">Organization</option>
+                            <option value="@CustomerType.PrivateCompany">Business / private company</option>
+                        </InputSelect>
+                        <ValidationMessage For="() => Form.CustomerType" class="field-error" />
+                    </fieldset>
+
+                    @if (Form.CustomerType is CustomerType.Organization or CustomerType.PrivateCompany)
+                    {
+                    <div class="form-field">
+                        <label for="organization-name" class="field-label">Registered organization or company name</label>
+                        <InputText id="organization-name" @bind-Value="Form.OrganizationName" class="field-control" autocomplete="organization" maxlength="100" />
+                        <ValidationMessage For="() => Form.OrganizationName" class="field-error" />
+                    </div>
+                    }
+
+                    <div class="form-field">
+                        <label for="legal-name" class="field-label">Your full legal name</label>
+                        <InputText id="legal-name" @bind-Value="Form.FullName" class="field-control" autocomplete="name" maxlength="100" aria-required="true" />
+                        <ValidationMessage For="() => Form.FullName" class="field-error" />
+                    </div>
+
+                    <div class="form-field">
+                        <label for="email" class="field-label">Email address</label>
+                        <InputText id="email" @bind-Value="Form.Email" class="field-control" type="email" autocomplete="email" inputmode="email" maxlength="254" aria-required="true" />
+                        <ValidationMessage For="() => Form.Email" class="field-error" />
+                    </div>
+
+                    <div class="form-field">
+                        <label for="mobile" class="field-label">South African cellphone number</label>
+                        <InputText id="mobile" @bind-Value="Form.MobileNumber" class="field-control" type="tel" autocomplete="tel" inputmode="tel" placeholder="082 123 4567 or +27 82 123 4567" aria-describedby="mobile-hint" aria-required="true" />
+                        <p id="mobile-hint" class="field-hint">Use a number beginning with 06, 07 or 08.</p>
+                        <ValidationMessage For="() => Form.MobileNumber" class="field-error" />
+                    </div>
+                    <button class="primary-button w-full" type="button" @onclick="ContinueToIdentity">Continue to identity details</button>
+                }
+                else
+                {
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div class="form-field">
+                            <label for="identity-type" class="field-label">Identity document</label>
+                            <InputSelect id="identity-type" TValue="IdentityDocumentType?" @bind-Value="Form.IdentityType" class="field-control">
+                                <option value="">Choose document</option>
+                                <option value="@IdentityDocumentType.SouthAfricanId">South African ID</option>
+                                <option value="@IdentityDocumentType.Passport">Passport</option>
+                            </InputSelect>
+                            <ValidationMessage For="() => Form.IdentityType" class="field-error" />
+                        </div>
+                        <div class="form-field">
+                            <label for="identity-number" class="field-label">ID or passport number</label>
+                            <InputText id="identity-number" @bind-Value="Form.IdentityNumber" class="field-control" autocomplete="off" maxlength="20" aria-required="true" />
+                            <ValidationMessage For="() => Form.IdentityNumber" class="field-error" />
+                        </div>
+                    </div>
+
+                    <details class="rounded-xl border border-stroke bg-canvas p-4">
+                        <summary class="min-h-11 cursor-pointer py-2 text-sm font-semibold text-ink">Add tax information now (optional)</summary>
+                        <div class="form-field mt-3">
+                            <label for="tax-reference" class="field-label">Tax reference number <span class="font-normal text-secondary">optional for now</span></label>
+                            <InputText id="tax-reference" @bind-Value="Form.TaxReference" class="field-control" inputmode="numeric" autocomplete="off" maxlength="10" aria-describedby="tax-reference-hint" />
+                            <p id="tax-reference-hint" class="field-hint">Enter 10 digits. You can add this later before using tax features.</p>
+                            <ValidationMessage For="() => Form.TaxReference" class="field-error" />
+                        </div>
+                    </details>
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div class="form-field">
+                            <label for="password" class="field-label">Create password</label>
+                            <InputText id="password" @bind-Value="Form.Password" class="field-control" type="password" autocomplete="new-password" aria-required="true" />
+                            <ValidationMessage For="() => Form.Password" class="field-error" />
+                        </div>
+                        <div class="form-field">
+                            <label for="confirm-password" class="field-label">Confirm password</label>
+                            <InputText id="confirm-password" @bind-Value="Form.ConfirmPassword" class="field-control" type="password" autocomplete="new-password" aria-required="true" />
+                            <ValidationMessage For="() => Form.ConfirmPassword" class="field-error" />
+                        </div>
+                    </div>
+
+                    <label class="flex min-h-11 items-start gap-3 rounded-xl px-1 py-2 text-sm leading-5 text-secondary">
+                        <InputCheckbox @bind-Value="Form.AcceptDemoNotice" class="mt-1 size-4 rounded border-stroke text-brand focus:ring-brand" />
+                        <span>I understand this is a local demo and does not create a real bank account or send my details anywhere.</span>
+                    </label>
+                    <ValidationMessage For="() => Form.AcceptDemoNotice" class="field-error" />
+
+                    <div class="flex flex-col-reverse gap-2 sm:flex-row">
+                        <button class="secondary-button flex-1" type="button" @onclick="ReturnToDetails">Back to details</button>
+                        <button class="primary-button flex-1" type="button" @onclick="CompleteRegistration">Create demo profile</button>
+                    </div>
+                }
+            </EditForm>
+        </section>
+    </main>
+</div>
+
+@code {
+    private readonly RegistrationForm Form = new()
+    {
+        CustomerType = CustomerType.Individual,
+        IdentityType = IdentityDocumentType.SouthAfricanId,
+        FullName = "Maya Chen",
+        Email = "maya@example.co.za",
+        MobileNumber = "082 123 4567",
+        IdentityNumber = "8001015009087",
+        TaxReference = "9123456789"
+    };
+    private EditContext EditContext = default!;
+    private ValidationMessageStore Messages = default!;
+    private int CurrentStep { get; set; } = 1;
+
+    protected override void OnInitialized()
+    {
+        EditContext = new EditContext(Form);
+        Messages = new ValidationMessageStore(EditContext);
+        EditContext.OnFieldChanged += ClearFieldValidation;
+        if (Banking.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/dashboard", replace: true);
+        }
+    }
+
+    private void ClearFieldValidation(object? sender, FieldChangedEventArgs args)
+    {
+        Messages.Clear(args.FieldIdentifier);
+        EditContext.NotifyValidationStateChanged();
+    }
+
+    private void ContinueToIdentity()
+    {
+        Messages.Clear();
+        ValidateProperty(nameof(Form.CustomerType), Form.CustomerType);
+        ValidateProperty(nameof(Form.FullName), Form.FullName);
+        ValidateProperty(nameof(Form.Email), Form.Email);
+        ValidateProperty(nameof(Form.MobileNumber), Form.MobileNumber);
+
+        if (Form.CustomerType is CustomerType.Organization or CustomerType.PrivateCompany)
+        {
+            ValidateProperty(nameof(Form.OrganizationName), Form.OrganizationName);
+            if (string.IsNullOrWhiteSpace(Form.OrganizationName))
+            {
+                Messages.Add(new FieldIdentifier(Form, nameof(Form.OrganizationName)), "Enter the registered organization or company name.");
+            }
+        }
+
+        var normalizedPhone = Regex.Replace(Form.MobileNumber ?? string.Empty, @"[\s()-]", string.Empty);
+        if (!string.IsNullOrWhiteSpace(Form.MobileNumber)
+            && !Regex.IsMatch(normalizedPhone, @"^(?:\+27|0)[6-8]\d{8}$"))
+        {
+            Messages.Add(new FieldIdentifier(Form, nameof(Form.MobileNumber)), "Enter a South African cellphone number, such as 082 123 4567 or +27 82 123 4567.");
+        }
+
+        EditContext.NotifyValidationStateChanged();
+        if (!EditContext.GetValidationMessages().Any())
+        {
+            CurrentStep = 2;
+        }
+    }
+
+    private void ValidateProperty(string memberName, object? value)
+    {
+        var field = new FieldIdentifier(Form, memberName);
+        var results = new List<ValidationResult>();
+        var context = new ValidationContext(Form) { MemberName = memberName };
+        Validator.TryValidateProperty(value, context, results);
+        foreach (var result in results)
+        {
+            Messages.Add(field, result.ErrorMessage ?? "Check this field.");
+        }
+    }
+
+    private void ReturnToDetails()
+    {
+        Messages.Clear();
+        EditContext.NotifyValidationStateChanged();
+        CurrentStep = 1;
+    }
+
+    private void CompleteRegistration()
+    {
+        Messages.Clear();
+        if (!EditContext.Validate())
+        {
+            return;
+        }
+
+        Banking.CompleteRegistration(Form);
+        Navigation.NavigateTo("/dashboard");
+    }
+}

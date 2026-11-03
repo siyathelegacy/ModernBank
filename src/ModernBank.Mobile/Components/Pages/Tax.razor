@@ -1,0 +1,135 @@
+@page "/tax"
+@inject DemoBankingState Banking
+@inject NavigationManager Navigation
+
+<PageTitle>Tax centre · Modern Bank</PageTitle>
+
+<div class="mx-auto max-w-6xl px-4 py-6 sm:px-7 lg:px-10 lg:py-9">
+    <header class="mb-6">
+        <p class="text-sm text-secondary">Your SARS reserve and tax activity</p>
+        <h1 class="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl">Tax centre</h1>
+        <p class="mt-2 max-w-2xl leading-6 text-secondary">See what you’ve set aside, review a simple estimate and choose what to do with your frozen reserve.</p>
+    </header>
+
+    @if (Banking.IsSarsAdmin)
+    {
+        <section class="rounded-2xl border border-brand/20 bg-white p-5 sm:p-6">
+            <h2 class="font-display text-lg font-semibold">Taxpayer view unavailable</h2>
+            <p class="mt-2 leading-6 text-secondary">This role is limited to the separate SARS administrator preview.</p>
+            <a class="primary-button mt-4 inline-flex" href="/sars-admin">Open SARS preview</a>
+        </section>
+    }
+    else
+    {
+        <section class="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]" aria-label="Tax balance and estimate">
+            <BalanceCard Label="SARS balance · frozen" Amount="@Banking.SarsBalance" Description="Income allocations add to this separate reserve. It cannot be used for daily spending or normal transfers." Variant="tax" BadgeText="Frozen" BadgeIcon="lock" HeadingId="tax-centre-balance">
+                <Footer>
+                    <button class="inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-900/20 bg-white/70 px-4 text-sm font-semibold text-amber-950 hover:bg-white" type="button" disabled="@(Banking.SarsBalance <= 0 || string.IsNullOrWhiteSpace(Banking.TaxReference))" @onclick="OpenPaymentConfirmation">
+                        <AppIcon Name="receipt" Class="size-4" />Pay SARS from reserve
+                    </button>
+                    @if (string.IsNullOrWhiteSpace(Banking.TaxReference))
+                    {
+                        <p class="mt-3 text-sm leading-5 text-amber-950"><a href="/profile" class="font-semibold underline underline-offset-2">Add your tax reference</a> before using the simulated payment flow.</p>
+                    }
+                    else if (Banking.SarsBalance <= 0)
+                    {
+                        <p class="mt-3 text-sm text-amber-950">There is no frozen balance available to pay from.</p>
+                    }
+                </Footer>
+            </BalanceCard>
+
+            <section class="rounded-2xl border border-stroke bg-white p-5 sm:p-6" aria-labelledby="estimate-heading">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 id="estimate-heading" class="font-display text-lg font-semibold">Illustrative tax estimate</h2>
+                        <p class="mt-1 text-sm leading-5 text-secondary">A simple percentage of logged income, not an official SARS calculation.</p>
+                    </div>
+                    <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-wash text-brand"><AppIcon Name="chart" Class="size-5" /></span>
+                </div>
+                <div class="mt-5 grid grid-cols-2 gap-3">
+                    <div class="rounded-xl bg-canvas p-3">
+                        <p class="text-xs text-secondary">Logged taxable income</p>
+                        <p class="mt-1 font-display text-lg font-semibold">@VisibleMoney(Banking.TaxableIncomeThisYear)</p>
+                    </div>
+                    <div class="rounded-xl bg-canvas p-3">
+                        <p class="text-xs text-secondary">Estimated liability</p>
+                        <p class="mt-1 font-display text-lg font-semibold">@VisibleMoney(Banking.EstimatedTaxLiability)</p>
+                    </div>
+                </div>
+                <dl class="mt-4 divide-y divide-stroke text-sm">
+                    <div class="flex justify-between gap-3 py-3"><dt class="text-secondary">Already paid to SARS</dt><dd class="font-semibold">@VisibleMoney(Banking.TaxPaidToSars)</dd></div>
+                    <div class="flex justify-between gap-3 py-3"><dt class="text-secondary">Frozen reserve</dt><dd class="font-semibold">@VisibleMoney(Banking.SarsBalance)</dd></div>
+                    <div class="flex justify-between gap-3 py-3"><dt class="font-semibold">Illustrative amount still due</dt><dd class="font-semibold">@VisibleMoney(Banking.EstimatedTaxGap)</dd></div>
+                </dl>
+                @if (Banking.EstimatedTaxSurplus > 0)
+                {
+                    <p class="mt-2 rounded-xl bg-mint px-3 py-2.5 text-sm leading-5 text-positive">Your recorded payments and reserve are @VisibleMoney(Banking.EstimatedTaxSurplus) above this simple estimate. It is not a refund entitlement.</p>
+                }
+                <EditForm Model="@EstimateForm" OnValidSubmit="UpdateEstimate" class="mt-4 border-t border-stroke pt-4">
+                    <DataAnnotationsValidator />
+                    <div class="form-field">
+                        <label class="field-label" for="estimate-rate">Estimate rate (%)</label>
+                        <div class="flex gap-2">
+                            <InputNumber id="estimate-rate" @bind-Value="EstimateForm.TaxReservePercent" class="field-control" min="1" max="100" />
+                            <button class="secondary-button shrink-0" type="submit">Update</button>
+                        </div>
+                        <ValidationMessage For="() => EstimateForm.TaxReservePercent" class="field-error" />
+                    </div>
+                </EditForm>
+            </section>
+        </section>
+
+        <section class="mt-5 rounded-2xl border border-stroke bg-white p-5 sm:p-6" aria-labelledby="tax-history-heading">
+            <div class="mb-4 flex items-center justify-between gap-4">
+                <div>
+                    <h2 id="tax-history-heading" class="font-display text-lg font-semibold">Tax activity</h2>
+                    <p class="mt-1 text-sm text-secondary">Demo reserve allocations, payments and refunds.</p>
+                </div>
+                <span class="rounded-full bg-canvas px-3 py-1 text-xs font-semibold text-secondary">@Banking.TaxActivities.Count entries</span>
+            </div>
+            @if (Banking.TaxActivities.Count == 0)
+            {
+                <div class="rounded-xl bg-canvas px-4 py-8 text-center">
+                    <p class="font-semibold">No tax activity yet</p>
+                    <p class="mt-1 text-sm text-secondary">Log incoming income to see a sample SARS reserve allocation here.</p>
+                    <a class="mt-3 inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-brand hover:bg-white" href="/dashboard">Log income</a>
+                </div>
+            }
+            else
+            {
+                <ul class="divide-y divide-stroke">
+                    @foreach (var item in Banking.TaxActivities)
+                    {
+                        <li class="flex min-h-[68px] items-center gap-3 py-3 first:pt-0 last:pb-0">
+                            <span class="grid size-10 shrink-0 place-items-center rounded-xl @(item.IsRefund ? "bg-mint text-positive" : "bg-amber-50 text-amber-900")"><AppIcon Name="@(item.IsRefund ? "income" : "shield")" Class="size-5" /></span>
+                            <span class="min-w-0 flex-1">
+                                <span class="block truncate text-sm font-semibold">@item.Description</span>
+                                <span class="mt-0.5 block truncate text-xs text-secondary">@item.Date.ToString("d MMM yyyy") · @item.Reference</span>
+                            </span>
+                            <span class="text-right">
+                                <span class="block text-sm font-semibold @(item.IsRefund ? "text-positive" : "text-ink")">@(item.IsRefund ? "+" : "−")@VisibleMoney(item.Amount)</span>
+                                <span class="block text-xs text-secondary">@(item.IsPending ? "Pending demo" : item.IsRefund ? "Refund received" : "Recorded")</span>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+        <p class="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-5 text-amber-950">This is a user-interface prototype. It is not connected to SARS, does not submit returns or settle payments, and the estimate is not tax advice.</p>
+    }
+</div>
+
+@code {
+    private readonly TaxSettingsForm EstimateForm = new();
+
+    protected override void OnInitialized()
+    {
+        EstimateForm.TaxReservePercent = (int)Banking.EstimatedTaxRate;
+    }
+
+    private string VisibleMoney(decimal amount) => Banking.IsBalanceVisible ? DemoBankingState.Money(amount) : "R •••••••";
+
+    private void UpdateEstimate() => Banking.UpdateTaxEstimateRate(EstimateForm.TaxReservePercent);
+
+    private void OpenPaymentConfirmation() => Navigation.NavigateTo("/tax/pay");
+}

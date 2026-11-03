@@ -1,0 +1,137 @@
+@page "/accounts"
+@inject DemoBankingState Banking
+@inject NavigationManager Navigation
+
+<PageTitle>Accounts · Modern Bank</PageTitle>
+
+<div class="mx-auto max-w-6xl px-4 py-6 sm:px-7 lg:px-10 lg:py-9">
+    <header class="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+            <p class="text-sm text-secondary">Everyday, savings and investments</p>
+            <h1 class="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl">Your accounts</h1>
+        </div>
+        <a class="primary-button" href="/transfer?type=deposit"><AppIcon Name="plus" Class="size-4" />Add money</a>
+    </header>
+
+    <section class="grid gap-3 sm:grid-cols-3" aria-label="Account balances">
+        <article class="rounded-2xl border border-stroke bg-white p-4">
+            <p class="text-sm text-secondary">Available across accounts</p>
+            <p class="mt-2 font-display text-xl font-semibold">@VisibleMoney(Banking.AvailableBalance)</p>
+            <p class="mt-1 text-xs text-secondary">Primary and savings accounts</p>
+        </article>
+        <article class="rounded-2xl border border-stroke bg-white p-4">
+            <p class="text-sm text-secondary">Investment</p>
+            <p class="mt-2 font-display text-xl font-semibold">@VisibleMoney(Banking.InvestmentBalance)</p>
+            <p class="mt-1 text-xs text-secondary">Separate from available funds</p>
+        </article>
+        <article class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <p class="text-sm text-amber-950">SARS reserve · frozen</p>
+            <p class="mt-2 font-display text-xl font-semibold text-amber-950">@VisibleMoney(Banking.SarsBalance)</p>
+            <a class="mt-1 inline-flex min-h-8 items-center text-sm font-semibold text-amber-950 underline underline-offset-2" href="/tax">View tax centre</a>
+        </article>
+    </section>
+
+    <section class="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
+        <div class="space-y-3">
+            @foreach (var account in Banking.Accounts)
+            {
+                var accountActivity = Banking.Activity.Where(item => item.AccountId == account.Id).Take(2).ToList();
+                var isInvestment = account.Type == "Investment";
+                <article class="rounded-2xl border border-stroke bg-white p-5 sm:p-6">
+                    <div class="flex items-start gap-4">
+                        <span class="grid size-11 shrink-0 place-items-center rounded-2xl @(isInvestment ? "bg-teal-50 text-teal-800" : "bg-wash text-brand")">
+                            <AppIcon Name="@(isInvestment ? "trend" : "card")" Class="size-5" />
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="font-display text-lg font-semibold">@account.Name</h2>
+                                @if (account.IsPrimary)
+                                {
+                                    <span class="rounded-full bg-wash px-2.5 py-1 text-xs font-semibold text-brand">Primary</span>
+                                }
+                                else
+                                {
+                                    <span class="rounded-full bg-canvas px-2.5 py-1 text-xs font-semibold text-secondary">@account.Type</span>
+                                }
+                            </div>
+                            <p class="mt-1 text-sm text-secondary">@account.AccountNumber · @account.Type</p>
+                            <p class="mt-4 font-display text-2xl font-semibold tracking-tight">@VisibleMoney(account.Balance)</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex flex-wrap gap-2 border-t border-stroke pt-4">
+                        @if (!isInvestment)
+                        {
+                            <a class="secondary-button flex-1" href="@($"/transfer?type=deposit&source={account.Id}")">Deposit</a>
+                            <a class="secondary-button flex-1" href="@($"/transfer?type=withdrawal&source={account.Id}")">Withdraw</a>
+                            <a class="secondary-button flex-1" href="@($"/transfer?type=transfer&source={account.Id}")">Transfer</a>
+                        }
+                        else
+                        {
+                            <p class="text-sm leading-5 text-secondary">Investment balance is shown separately and is excluded from everyday withdrawals.</p>
+                        }
+                    </div>
+                    @if (accountActivity.Count > 0)
+                    {
+                        <div class="mt-4 border-t border-stroke pt-4">
+                            <p class="mb-3 text-xs font-semibold text-secondary">Latest activity</p>
+                            <TransactionList Transactions="@accountActivity" />
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="mt-4 rounded-xl bg-canvas px-4 py-3 text-sm text-secondary">No activity yet. Start by adding demo money or transferring funds.</p>
+                    }
+                </article>
+            }
+        </div>
+
+        <aside class="rounded-2xl border border-stroke bg-white p-5 sm:p-6">
+            <div class="flex items-start gap-3">
+                <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-wash text-brand"><AppIcon Name="plus" Class="size-5" /></span>
+                <div>
+                    <h2 class="font-display text-lg font-semibold">Create a savings account</h2>
+                    <p class="mt-1 text-sm leading-5 text-secondary">Give a new savings space a name. You can move demo funds into it later.</p>
+                </div>
+            </div>
+            <EditForm Model="@Form" OnValidSubmit="CreateAccount" class="mt-5 space-y-4">
+                <DataAnnotationsValidator />
+                <div class="form-field">
+                    <label class="field-label" for="savings-name">Account name</label>
+                    <InputText id="savings-name" @bind-Value="Form.Name" class="field-control" maxlength="32" placeholder="Holiday fund" />
+                    <ValidationMessage For="() => Form.Name" class="field-error" />
+                </div>
+                @if (CreationError is not null)
+                {
+                    <p class="field-error" role="alert">@CreationError</p>
+                }
+                <button class="primary-button w-full" type="submit">Create savings account</button>
+            </EditForm>
+            <p class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm leading-5 text-amber-950">Demo only: accounts are not connected to a bank and have no external account number.</p>
+        </aside>
+    </section>
+</div>
+
+@code {
+    private readonly SavingsAccountForm Form = new();
+    private string? CreationError { get; set; }
+
+    private string VisibleMoney(decimal amount) => Banking.IsBalanceVisible ? DemoBankingState.Money(amount) : "R •••••••";
+
+    private void CreateAccount()
+    {
+        CreationError = null;
+        try
+        {
+            Banking.CreateSavingsAccount(Form.Name);
+            Form.Name = string.Empty;
+        }
+        catch (InvalidOperationException exception)
+        {
+            CreationError = exception.Message;
+        }
+        catch (ArgumentException exception)
+        {
+            CreationError = exception.Message;
+        }
+    }
+}
