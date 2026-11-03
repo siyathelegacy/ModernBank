@@ -22,11 +22,13 @@ jobs:
         dotnet-version: 10.0.x
         
     - name: Restore dependencies
-      run: dotnet restore src/Presentation/ModernBank.API.csproj
+      run: | 
+           dotnet restore src/Presentation/ModernBank.API.csproj
            dotnet restore src/Contracts/ModernBank.Contracts.csproj
            dotnet restore src/Clients/ModernBank.Http_Client.csproj
       
     - name: Build
-      run: dotnet restore src/Presentation/ModernBank.API.csproj
+      run: |
+           dotnet restore src/Presentation/ModernBank.API.csproj
            dotnet restore src/Contracts/ModernBank.Contracts.csproj
            dotnet restore src/Clients/ModernBank.Http_Client.csproj
