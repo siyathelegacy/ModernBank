@@ -24,11 +24,11 @@ jobs:
     - name: Restore dependencies
       run: | 
            dotnet restore src/ModernBank.API/ModernBank.API.csproj
-           dotnet restore src/Contracts/ModernBank.Contracts.csproj
-           dotnet restore src/Clients/ModernBank.Http_Client.csproj
+           dotnet restore src/ModernBank.Contracts/ModernBank.Contracts.csproj
+           dotnet restore src/ModernBank.HttpClient/ModernBank.Http_Client.csproj
       
     - name: Build
       run: |
-           dotnet restore src/Presentation/ModernBank.API.csproj
-           dotnet restore src/Contracts/ModernBank.Contracts.csproj
-           dotnet restore src/Clients/ModernBank.Http_Client.csproj
+           dotnet build src/ModernBank.API/ModernBank.API.csproj
+           dotnet build src/ModernBank.Contracts/ModernBank.Contracts.csproj
+           dotnet build src/ModernBank.HttpClient/ModernBank.Http_Client.csproj
