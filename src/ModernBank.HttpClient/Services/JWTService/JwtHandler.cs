@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using ModernBank.Http_Client.Services.SessionService;
 using System.Net.Http.Headers;
-using System.Text;
-using System.Xml;
 
 namespace ModernBank.Http_Client.Services.JWTService
 {
-    public class JwtHandler(IserviceScopeFactory scopeFactory, ILogger<JwtHandler> logger): DelegatingHandler
+    public class JwtHandler(IServiceScopeFactory scopeFactory, ILogger<JwtHandler> logger): DelegatingHandler
     {
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
@@ -17,14 +16,16 @@ namespace ModernBank.Http_Client.Services.JWTService
             {
                 try
                 {
-                    request.Headers.Authorization = AuthenticationHeaderValue("Bearer", token);
-              
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                }
                 catch (FormatException fe)
                 {
-                    logger.LogWarning(fx.GetBaseException().Message, "Failed to set authorization header. Invalid token");
-                }catch(Exception ex)
+                    logger.LogWarning(fe.GetBaseException().Message, "Failed to set authorization header. Invalid token");
+                }
+                catch (Exception ex)
                 {
-                    logger.LogWarning(ex.GetBaseException().Message,"Failed to set authorization header.");
+                    logger.LogWarning(ex.GetBaseException().Message, "Failed to set authorization header.");
                 }
             }
             else

@@ -13,4 +13,3 @@ namespace ModernBank.Http_Client.Services.SessionService
         Task<string?> GetUserNameAsync();
     }
 }
-}
