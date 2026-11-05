@@ -1,8 +1,5 @@
 using ModernBank.Contracts.DTOs.AccountManagement;
-using System;
-using System.Collections.Generic;
 using System.Net.Http.Json;
-using System.Text;
 
 namespace ModernBank.Http_Client.Services.AccountService
 {
@@ -10,7 +7,14 @@ namespace ModernBank.Http_Client.Services.AccountService
     {
         public async Task<AccountDto> GetAcountInfo(AccountDto dto)
         {
-            return null;
+            ArgumentNullException.ThrowIfNull(dto);
+
+            var email = Uri.EscapeDataString(dto.Email);
+            var response = await client.GetFromJsonAsync<AccountDto>(
+                $"api/AccountServices/GetUserAccount?email={email}");
+
+            return response ?? throw new InvalidOperationException(
+                "The account service returned an empty response.");
         }
     }
 }

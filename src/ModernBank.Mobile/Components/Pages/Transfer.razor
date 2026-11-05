@@ -35,7 +35,7 @@
                         <InputSelect id="movement-source" @bind-Value="Form.AccountId" @bind-Value:after="ResetDestination" class="field-control">
                             @foreach (var account in SpendableAccounts)
                             {
-                                <option value="@account.Id">@account.Name · @FormatAccountBalance(account.Balance)</option>
+                                <option value="@account.BankAccId">@account.Name · @FormatAccountBalance(account.Balance)</option>
                             }
                         </InputSelect>
                         <ValidationMessage For="() => Form.AccountId" class="field-error" />
@@ -67,7 +67,7 @@
                             <option value="">Someone else (demo recipient)</option>
                             @foreach (var account in DestinationAccounts)
                             {
-                                <option value="@account.Id">@account.Name · @FormatAccountBalance(account.Balance)</option>
+                                <option value="@account.BankAccId">@account.Name · @FormatAccountBalance(account.Balance)</option>
                             }
                         </InputSelect>
                         <ValidationMessage For="() => Form.DestinationAccountId" class="field-error" />
@@ -112,7 +112,7 @@
     private readonly MoneyMovementForm Form = new() { Type = MoneyMovementType.Transfer, Amount = 250m };
     private string? MovementError { get; set; }
     private IReadOnlyList<BankAccount> SpendableAccounts => Banking.Accounts.Where(account => account.Type != "Investment").ToList();
-    private IReadOnlyList<BankAccount> DestinationAccounts => Banking.Accounts.Where(account => account.Id != Form.AccountId).ToList();
+    private IReadOnlyList<BankAccount> DestinationAccounts => Banking.Accounts.Where(account => account.BankAccId != Form.AccountId).ToList();
     private string CurrentTitle => Form.Type switch
     {
         MoneyMovementType.Deposit => "Add demo money",
@@ -146,13 +146,13 @@
             Form.Type = type;
         }
 
-        if (InitialSource is { } source && SpendableAccounts.Any(account => account.Id == source))
+        if (InitialSource is { } source && SpendableAccounts.Any(account => account.BankAccId == source))
         {
             Form.AccountId = source;
         }
-        else if (Form.AccountId is null || !SpendableAccounts.Any(account => account.Id == Form.AccountId))
+        else if (Form.AccountId is null || !SpendableAccounts.Any(account => account.BankAccId == Form.AccountId))
         {
-            Form.AccountId = SpendableAccounts.FirstOrDefault()?.Id;
+            Form.AccountId = SpendableAccounts.FirstOrDefault()?.BankAccId;
         }
 
         ResetDestination();

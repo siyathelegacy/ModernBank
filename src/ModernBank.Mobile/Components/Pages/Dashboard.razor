@@ -85,7 +85,7 @@
                         <InputSelect id="income-account" @bind-Value="IncomeForm.AccountId" class="field-control">
                             @foreach (var account in SpendableAccounts)
                             {
-                                <option value="@account.Id">@account.Name</option>
+                                <option value="@account.BankAccId">@account.Name</option>
                             }
                         </InputSelect>
                         <ValidationMessage For="() => IncomeForm.AccountId" class="field-error" />
@@ -169,7 +169,7 @@
     {
         AllocationForm.InvestmentPercent = Banking.Allocation.InvestmentPercent;
         AllocationForm.TaxReservePercent = Banking.Allocation.TaxPercent;
-        IncomeForm.AccountId = SpendableAccounts.FirstOrDefault()?.Id;
+        IncomeForm.AccountId = SpendableAccounts.FirstOrDefault()?.BankAccId;
     }
 
     private string VisibleMoney(decimal amount) => Banking.IsBalanceVisible ? DemoBankingState.Money(amount) : "R •••••••";

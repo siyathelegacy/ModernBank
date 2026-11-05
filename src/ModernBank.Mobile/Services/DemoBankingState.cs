@@ -12,7 +12,7 @@ public sealed class DemoBankingState
     [
         new()
         {
-            Id = Guid.Parse("ad058a12-ae5a-4210-8786-701e8a4c9651"),
+            BankAccId = Guid.Parse("ad058a12-ae5a-4210-8786-701e8a4c9651"),
             Name = "Everyday account",
             AccountNumber = "•••• 4829",
             Type = "Primary",
@@ -21,7 +21,7 @@ public sealed class DemoBankingState
         },
         new()
         {
-            Id = Guid.Parse("42bbff81-223f-420f-b267-0ffec12b6194"),
+            BankAccId = Guid.Parse("42bbff81-223f-420f-b267-0ffec12b6194"),
             Name = "Rainy day savings",
             AccountNumber = "•••• 2196",
             Type = "Savings",
@@ -29,7 +29,7 @@ public sealed class DemoBankingState
         },
         new()
         {
-            Id = Guid.Parse("c34d1bf0-001a-48b3-a420-46bdfe2c8854"),
+            BankAccId = Guid.Parse("c34d1bf0-001a-48b3-a420-46bdfe2c8854"),
             Name = "Investment pocket",
             AccountNumber = "•••• 0834",
             Type = "Investment",
@@ -208,7 +208,7 @@ public sealed class DemoBankingState
             DateTime.Now,
             grossAmount,
             true,
-            sourceAccount.Id,
+            sourceAccount.BankAccId,
             sourceAccount.Name));
         AddActivity("Investment allocation", "Investment", -investment, investmentAccount);
         AddActivity("SARS tax reserve", "Tax allocation", -tax, null);
@@ -245,10 +245,10 @@ public sealed class DemoBankingState
         var account = FindAccount(form.AccountId.Value);
         var amount = decimal.Round(form.Amount.Value, 2, MidpointRounding.ToEven);
         var destination = form.Type == MoneyMovementType.Transfer && form.DestinationAccountId is { } destinationId
-            ? _accounts.SingleOrDefault(candidate => candidate.Id == destinationId)
+            ? _accounts.SingleOrDefault(candidate => candidate.BankAccId == destinationId)
                 ?? throw new InvalidOperationException("Choose a destination account that still exists.")
             : null;
-        if (destination?.Id == account.Id)
+        if (destination?.BankAccId == account.BankAccId)
         {
             throw new InvalidOperationException("Choose a different destination account.");
         }
@@ -373,7 +373,7 @@ public sealed class DemoBankingState
     {
         var account = new BankAccount
         {
-            Id = Guid.NewGuid(),
+            BankAccId = Guid.NewGuid(),
             Name = name,
             AccountNumber = $"•••• {Random.Shared.Next(1000, 9999)}",
             Type = type,
@@ -384,7 +384,7 @@ public sealed class DemoBankingState
     }
 
     private BankAccount FindAccount(Guid id) =>
-        _accounts.SingleOrDefault(account => account.Id == id && account.Type != "Investment")
+        _accounts.SingleOrDefault(account => account.BankAccId == id && account.Type != "Investment")
         ?? throw new InvalidOperationException("Choose an available account. Investment and SARS reserves cannot be withdrawn from this flow.");
 
     private static void EnsureSufficientFunds(BankAccount account, decimal amount)
@@ -404,7 +404,7 @@ public sealed class DemoBankingState
             DateTime.Now,
             amount,
             amount > 0,
-            account?.Id,
+            account?.BankAccId,
             account?.Name ?? "SARS Balance"));
     }
 

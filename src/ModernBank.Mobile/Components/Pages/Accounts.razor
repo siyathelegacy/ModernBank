@@ -36,7 +36,7 @@
         <div class="space-y-3">
             @foreach (var account in Banking.Accounts)
             {
-                var accountActivity = Banking.Activity.Where(item => item.AccountId == account.Id).Take(2).ToList();
+                var accountActivity = Banking.Activity.Where(item => item.AccountId == account.BankAccId).Take(2).ToList();
                 var isInvestment = account.Type == "Investment";
                 <article class="rounded-2xl border border-stroke bg-white p-5 sm:p-6">
                     <div class="flex items-start gap-4">
@@ -62,9 +62,9 @@
                     <div class="mt-4 flex flex-wrap gap-2 border-t border-stroke pt-4">
                         @if (!isInvestment)
                         {
-                            <a class="secondary-button flex-1" href="@($"/transfer?type=deposit&source={account.Id}")">Deposit</a>
-                            <a class="secondary-button flex-1" href="@($"/transfer?type=withdrawal&source={account.Id}")">Withdraw</a>
-                            <a class="secondary-button flex-1" href="@($"/transfer?type=transfer&source={account.Id}")">Transfer</a>
+                            <a class="secondary-button flex-1" href="@($"/transfer?type=deposit&source={account.BankAccId}")">Deposit</a>
+                            <a class="secondary-button flex-1" href="@($"/transfer?type=withdrawal&source={account.BankAccId}")">Withdraw</a>
+                            <a class="secondary-button flex-1" href="@($"/transfer?type=transfer&source={account.BankAccId}")">Transfer</a>
                         }
                         else
                         {
