@@ -13,16 +13,6 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ---------------------------------
-// ---------------------------------
-
-
-// ---------------------------------
-// ---------------------------------
-
-
-// ---------------------------------
-// ---------------------------------
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 
 var app = builder.Build();

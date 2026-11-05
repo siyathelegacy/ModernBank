@@ -23,7 +23,7 @@ public static class DependencyInjection
                     "Configure the database using the ConnectionStrings:ModernBank setting.");
             }
 
-            options.UseMySQL(connectionString);
+            options.UseSqlServer(connectionString);
         });
 
         services.AddScoped<IDbContext>(provider => provider.GetRequiredService<ModernBankDbContext>());
