@@ -1,5 +1,7 @@
 using System.Globalization;
-using ModernBank.Domain.Models;
+using ModernBank.Domain.Models.AccountManagement;
+using ModernBank.Domain.Models.TxManagement;
+using ModernBank.Domain.Models.UserManagement;
 using ModernBank.Models;
 
 namespace ModernBank.Services;

@@ -2,6 +2,7 @@
 @inject DemoBankingState Banking
 @inject NavigationManager Navigation
 
+
 <PageTitle>Accounts · Modern Bank</PageTitle>
 
 <div class="mx-auto max-w-6xl px-4 py-6 sm:px-7 lg:px-10 lg:py-9">
@@ -112,9 +113,10 @@
 </div>
 
 @code {
+
     private readonly SavingsAccountForm Form = new();
     private string? CreationError { get; set; }
-
+  
     private string VisibleMoney(decimal amount) => Banking.IsBalanceVisible ? DemoBankingState.Money(amount) : "R •••••••";
 
     private void CreateAccount()

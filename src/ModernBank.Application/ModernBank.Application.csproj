@@ -15,8 +15,4 @@
     <ProjectReference Include="..\ModernBank.Contracts\ModernBank.Contracts.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Repositories\" />
-  </ItemGroup>
-
 </Project>

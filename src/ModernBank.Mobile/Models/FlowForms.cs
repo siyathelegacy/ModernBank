@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
-using ModernBank.Domain.Models;
+using ModernBank.Domain.Models.TxManagement;
+using ModernBank.Domain.Models.UserManagement;
 
 namespace ModernBank.Models;
 
@@ -69,7 +70,7 @@ public sealed class RegistrationForm : IValidatableObject
                 [nameof(IdentityNumber)]);
         }
 
-        if (CustomerType is global::ModernBank.Domain.Models.CustomerType.Organization or global::ModernBank.Domain.Models.CustomerType.PrivateCompany
+        if (CustomerType is global::ModernBank.Domain.Models.UserManagement.CustomerType.Organization or global::ModernBank.Domain.Models.UserManagement.CustomerType.PrivateCompany
             && string.IsNullOrWhiteSpace(OrganizationName))
         {
             yield return new ValidationResult(

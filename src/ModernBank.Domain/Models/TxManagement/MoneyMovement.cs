@@ -1,33 +1,10 @@
-namespace ModernBank.Domain.Models;
-
-public enum CustomerType
-{
-    Individual,
-    Organization,
-    PrivateCompany
-}
-
-public enum IdentityDocumentType
-{
-    SouthAfricanId,
-    Passport
-}
+namespace ModernBank.Domain.Models.TxManagement;
 
 public enum MoneyMovementType
 {
     Deposit,
     Transfer,
     Withdrawal
-}
-
-public sealed class BankAccount
-{
-    public required Guid Id { get; init; }
-    public required string Name { get; init; }
-    public required string AccountNumber { get; init; }
-    public required string Type { get; init; }
-    public decimal Balance { get; set; }
-    public bool IsPrimary { get; init; }
 }
 
 public sealed record MoneyMovement(
@@ -73,13 +50,5 @@ public sealed record SarsPaymentReceipt(
     string PaymentReference,
     DateTime Received,
     decimal Amount);
-
-public sealed record AllocationSettings(int InvestmentPercent, int PersonalPercent, int TaxPercent)
-{
-    public bool IsValid => InvestmentPercent >= 0
-        && PersonalPercent >= 0
-        && TaxPercent >= 0
-        && InvestmentPercent + PersonalPercent + TaxPercent == 100;
-}
 
 public sealed record MovementReceipt(string Description, decimal Amount);

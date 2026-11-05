@@ -27,7 +27,7 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IDbContext>(provider => provider.GetRequiredService<ModernBankDbContext>());
-        services.AddScoped<IAppUserRepository, AppUserRepository>();
+        services.AddScoped<IAccountRepository, AccountRepository>();
 
         return services;
     }
