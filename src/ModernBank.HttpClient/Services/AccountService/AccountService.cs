@@ -10,8 +10,7 @@ namespace ModernBank.Http_Client.Services.AccountService
     {
         public async Task<AccountDto> GetAcountInfo(AccountDto dto)
         {
-            var response = await client.GetFromJsonAsync<AccountDto>("", dto);
-            return response is not null ? response : new AccountDto();
+            return null;
         }
     }
 }
